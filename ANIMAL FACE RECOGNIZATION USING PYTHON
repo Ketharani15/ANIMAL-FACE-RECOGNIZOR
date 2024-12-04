@@ -1,0 +1,59 @@
+import cv2
+import numpy as np
+from tensorflow.keras.applications import VGG16
+from tensorflow.keras.preprocessing import image
+from tensorflow.keras.applications.vgg16 import preprocess_input, decode_predictions
+
+# Load the VGG16 model
+model = VGG16(weights='imagenet', include_top=True)
+
+# Load the animal classification labels
+animal_labels = {
+    'dog': ['beagle', 'pug', 'golden retriever'],
+    'cat': ['tabby', 'persian', 'siamese'],
+    'bird': ['parrot', 'sparrow', 'eagle'],
+    'fish': ['goldfish', 'salmon', 'tuna']
+}
+
+def recognize_animal(image_path):
+    # Load the input image
+    img = image.load_img(image_path, target_size=(224, 224))
+
+    # Preprocess the image
+    x = image.img_to_array(img)
+    x = np.expand_dims(x, axis=0)
+    x = preprocess_input(x)
+
+    # Make predictions on the input image
+    preds = model.predict(x)
+    predictions = decode_predictions(preds, top=3)[0]
+
+    # Identify the animal in the image
+    animal = None
+    for prediction in predictions:
+        for label, sublabels in animal_labels.items():
+            if prediction[1].lower() in sublabels or label in prediction[1].lower():
+                animal = label
+                break
+        if animal:
+            break
+
+    # Return the animal information
+    if animal:
+        return {
+            'animal': animal,
+            'predictions': predictions
+        }
+    else:
+        return None
+
+# Example usage
+image_path = 'path_to_your_image.jpg'
+result = recognize_animal(image_path)
+if result:
+    print(f"Animal: {result['animal']}")
+    print("Predictions:")
+    for prediction in result['predictions']:
+        print(f"{prediction[1]} ({prediction[2]})")
+else:
+    print("Unable to recognize the animal in the image.")
